@@ -173,9 +173,11 @@ function WeatherConditionIcon({ condition }: { condition: string }) {
   }
   if (cond.includes("雨") || cond.includes("rain") || cond.includes("shower") || cond.includes("thunder")) {
     return (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2">
-        <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25" fill="rgba(255,255,255,0.3)" />
-        <path d="M8 19v2M12 19v2M16 19v2" stroke="#80d8ff" strokeLinecap="round" />
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2">
+        <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25" fill="rgba(255,255,255,0.4)" stroke="#93c5fd" />
+        <path className={styles.rainDrop1} d="M8 17v3" stroke="#60a5fa" strokeWidth="2.2" strokeLinecap="round" />
+        <path className={styles.rainDrop2} d="M12 17v3" stroke="#93c5fd" strokeWidth="2.2" strokeLinecap="round" />
+        <path className={styles.rainDrop3} d="M16 17v3" stroke="#60a5fa" strokeWidth="2.2" strokeLinecap="round" />
       </svg>
     );
   }

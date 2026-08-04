@@ -30,8 +30,8 @@
 }
 
 .posterRainy {
-  background: #f3e8f7;
-  color: #452b59;
+  background: #ebf3fa;
+  color: #1e3a8a;
 }
 
 .posterSnowy {
@@ -65,11 +65,12 @@
 }
 
 .pillCloudy {
-  background: linear-gradient(135deg, #9b8abf 0%, #6d5b94 100%);
+  background: linear-gradient(135deg, #78909c 0%, #37474f 100%);
 }
 
+/* 沉浸下雨深蓝夜雨渐变 */
 .pillRainy {
-  background: linear-gradient(135deg, #a17fe0 0%, #6849a3 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e3a8a 100%);
 }
 
 .pillSnowy {
@@ -78,6 +79,17 @@
 
 .pillDefault {
   background: linear-gradient(135deg, #5fb4a2 0%, #307567 100%);
+}
+
+/* 动态雨滴连续下落 Keyframe 动画 */
+.rainDrop1 { animation: rainFall 0.85s infinite linear; }
+.rainDrop2 { animation: rainFall 0.85s infinite linear 0.28s; }
+.rainDrop3 { animation: rainFall 0.85s infinite linear 0.55s; }
+
+@keyframes rainFall {
+  0% { transform: translateY(-3px); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: translateY(6px); opacity: 0; }
 }
 
 /* 底部动态热浪 / 波浪水波动画 */

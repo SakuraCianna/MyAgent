@@ -105,18 +105,30 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             );
           }
 
-          // 2. 匹配工具调用状态提示 (如 ⚙️ *正在调用工具: xxx...*)
+          // 2. 匹配新版 [TOOL_CALL:name] 独立占位符
+          const explicitToolMatch = text.match(/^\[TOOL_CALL:([\w-]+)\]$/);
+          if (explicitToolMatch) {
+            const toolName = explicitToolMatch[1];
+            return (
+              <div key={idx} className={styles.toolStatusBadge}>
+                <span>⚙️</span>
+                <span>正在调用工具 <code className={styles.toolNameBadge}>{toolName}</code>...</span>
+              </div>
+            );
+          }
+
+          // 3. 匹配兼容旧版 ⚙️ *正在调用工具: xxx...* 格式
           const toolCallMatch = text.match(/(?:⚙️|\*)*\s*正在调用工具[：:]\s*`?([\w-]+)`?\s*\.\.\.\*?/);
           if (toolCallMatch) {
             const toolName = toolCallMatch[1];
-            const remainingText = text.replace(/(?:⚙️|\*)*\s*正在调用工具[：:]\s*`?[\w-]+`?\s*\.\.\.\*?/, "").trim();
+            const remainingText = text.replace(/(?:⚙️|\*)*\s*正在调用工具[：:]\s*`?[\w-]+`?\s*\.\.\.\*?/, "").replace(/^⚙️\s*/, "").trim();
             return (
               <div key={idx} style={{ margin: "6px 0" }}>
                 <div className={styles.toolStatusBadge}>
                   <span>⚙️</span>
                   <span>正在调用工具 <code className={styles.toolNameBadge}>{toolName}</code>...</span>
                 </div>
-                {remainingText && <div>{renderInlineText(remainingText)}</div>}
+                {remainingText && <p style={{ marginTop: "6px" }}>{renderInlineText(remainingText)}</p>}
               </div>
             );
           }

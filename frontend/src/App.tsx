@@ -167,7 +167,7 @@ export default function App() {
               if (last?.role === "assistant") {
                 next[next.length - 1] = {
                   ...last,
-                  content: last.content + `\n\n⚙️ *正在调用工具：\`${name}\`...*`,
+                  content: last.content + `\n\n[TOOL_CALL:${name}]\n\n`,
                 };
               }
               return next;
