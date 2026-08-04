@@ -91,6 +91,38 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             </ol>
           );
         }
+        if (block.type === "paragraph") {
+          const text = block.text.trim();
+
+          // 1. 匹配思考过程 [思考] ...
+          if (text.startsWith("[思考]")) {
+            const thoughtContent = text.replace(/^\[思考\]\s*/, "");
+            return (
+              <div key={idx} className={styles.thoughtBox}>
+                <div className={styles.thoughtTitle}>💭 Agent 思考逻辑</div>
+                <div>{renderInlineText(thoughtContent)}</div>
+              </div>
+            );
+          }
+
+          // 2. 匹配工具调用状态提示 (如 ⚙️ *正在调用工具: xxx...*)
+          const toolCallMatch = text.match(/(?:⚙️|\*)*\s*正在调用工具[：:]\s*`?([\w-]+)`?\s*\.\.\.\*?/);
+          if (toolCallMatch) {
+            const toolName = toolCallMatch[1];
+            const remainingText = text.replace(/(?:⚙️|\*)*\s*正在调用工具[：:]\s*`?[\w-]+`?\s*\.\.\.\*?/, "").trim();
+            return (
+              <div key={idx} style={{ margin: "6px 0" }}>
+                <div className={styles.toolStatusBadge}>
+                  <span>⚙️</span>
+                  <span>正在调用工具 <code className={styles.toolNameBadge}>{toolName}</code>...</span>
+                </div>
+                {remainingText && <div>{renderInlineText(remainingText)}</div>}
+              </div>
+            );
+          }
+
+          return <p key={idx}>{renderInlineText(block.text)}</p>;
+        }
         return <p key={idx}>{renderInlineText(block.text)}</p>;
       })}
     </div>
@@ -131,9 +163,8 @@ function parseMarkdownBlocks(content: string): Block[] {
       const headers = headerLine
         .split("|")
         .map((s) => s.trim())
-        .filter((_, i, arr) => i > 0 && i < arr.length - 1 || (arr.length === 2));
+        .filter((_, i, arr) => (i > 0 && i < arr.length - 1) || arr.length === 2);
 
-      // Skip separator line tableBuffer[1]
       const rows: string[][] = [];
       for (let i = 2; i < tableBuffer.length; i++) {
         const line = tableBuffer[i];
@@ -141,7 +172,7 @@ function parseMarkdownBlocks(content: string): Block[] {
         const cells = line
           .split("|")
           .map((s) => s.trim())
-          .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1 || (arr.length === 2));
+          .filter((_, idx, arr) => (idx > 0 && idx < arr.length - 1) || arr.length === 2);
         rows.push(cells);
       }
 
@@ -184,7 +215,7 @@ function parseMarkdownBlocks(content: string): Block[] {
       continue;
     }
 
-    // Markdown Table Check (lines containing '|')
+    // Markdown Table Check
     const isTableLine = line.trim().startsWith("|") || (line.includes("|") && line.trim().endsWith("|"));
     if (isTableLine) {
       flushList();
@@ -256,13 +287,11 @@ function parseMarkdownBlocks(content: string): Block[] {
 }
 
 function renderInlineText(text: string): React.ReactNode[] {
-  // Matches markdown links [text](url), bold (**text**), inline code (`code`)
   const tokens = text.split(/(\[.+?\]\(.+?\)|`[^`]+`|\*\*[^*]+\*\*)/g);
 
   return tokens.map((token, idx) => {
     if (!token) return null;
 
-    // Markdown Link: [label](url)
     const linkMatch = token.match(/^\[(.+?)\]\((.+?)\)$/);
     if (linkMatch) {
       const label = linkMatch[1];
@@ -274,12 +303,10 @@ function renderInlineText(text: string): React.ReactNode[] {
       );
     }
 
-    // Bold
     if (token.startsWith("**") && token.endsWith("**") && token.length > 4) {
       return <strong key={idx}>{token.slice(2, -2)}</strong>;
     }
 
-    // Inline Code
     if (token.startsWith("`") && token.endsWith("`") && token.length > 2) {
       return (
         <code key={idx} className={styles.inlineCode}>
@@ -294,6 +321,7 @@ function renderInlineText(text: string): React.ReactNode[] {
 
 function CodeBlock({ language, code }: { language?: string; code: string }) {
   const [copied, setCopied] = useState(false);
+  const [showLivePreview, setShowLivePreview] = useState(true);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
@@ -304,7 +332,9 @@ function CodeBlock({ language, code }: { language?: string; code: string }) {
   const isHtml =
     language?.toLowerCase() === "html" ||
     code.trim().toLowerCase().startsWith("<!doctype html") ||
-    code.includes("<html");
+    code.includes("<html") ||
+    code.includes("THREE.") ||
+    code.includes("canvas");
 
   const handlePreviewHtml = () => {
     const win = window.open("", "_blank");
@@ -321,14 +351,23 @@ function CodeBlock({ language, code }: { language?: string; code: string }) {
         <span>{language || "code"}</span>
         <div>
           {isHtml && (
-            <button
-              type="button"
-              className={styles.previewBtn}
-              onClick={handlePreviewHtml}
-              title="在新浏览器标签页中全屏实时渲染预览 HTML 网页"
-            >
-              在新窗口实时预览 ↗
-            </button>
+            <>
+              <button
+                type="button"
+                className={styles.previewBtn}
+                onClick={() => setShowLivePreview((v) => !v)}
+              >
+                {showLivePreview ? "隐藏内嵌 3D 预览 🙈" : "显示内嵌 3D 预览 👁️"}
+              </button>
+              <button
+                type="button"
+                className={styles.previewBtn}
+                onClick={handlePreviewHtml}
+                title="在新浏览器标签页中全屏实时渲染预览 HTML 网页"
+              >
+                在新窗口全屏预览 ↗
+              </button>
+            </>
           )}
           <button type="button" className={styles.copyBtn} onClick={handleCopy}>
             {copied ? "已复制 ✓" : "复制"}
@@ -338,6 +377,24 @@ function CodeBlock({ language, code }: { language?: string; code: string }) {
       <pre className={styles.codePre}>
         <code>{code}</code>
       </pre>
+
+      {/* 内嵌 3D / HTML 网页全功能实时运行沙箱 */}
+      {isHtml && showLivePreview && (
+        <div className={styles.liveIframeShell}>
+          <div className={styles.liveIframeBar}>
+            <span>🌐 网页与 3D 粒子特效实时运行窗口</span>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={handlePreviewHtml}>
+              新窗口全屏预览 ↗
+            </span>
+          </div>
+          <iframe
+            className={styles.liveIframe}
+            srcDoc={code}
+            sandbox="allow-scripts allow-same-origin allow-modals"
+            title="Interactive Web 3D Preview"
+          />
+        </div>
+      )}
     </div>
   );
 }

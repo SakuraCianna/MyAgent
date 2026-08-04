@@ -35,6 +35,8 @@ function getSystemPrompt(githubEnabled = false): string {
 
   prompt += `\n9. 【@ 提及工具指引】：如果用户的输入中包含了 @工具名（如 @web_fetcher, @image_generator, @search, @calculator, @github_reader 等），代表用户希望明确指定该工具完成操作。请识别用户诉求并优先调用对应的工具执行！`;
 
+  prompt += `\n10. 【网页与 3D 页面生成规范】：当用户要求制作、生成、创建 HTML 网页、3D 动画、Three.js 界面或前端组件时，在使用 code_executor 执行后，你必须在回答中完整附带包含 <!DOCTYPE html> 及全套 CSS/JS 的 \`\`\`html 代码块，以便前端离线及在线实时内嵌渲染预览！`;
+
   return prompt;
 }
 
