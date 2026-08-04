@@ -28,6 +28,12 @@ function runJsInSandbox(code: string): ExecResult {
       log: (...args: unknown[]) => {
         logs.push(args.map((a) => safeStringify(a)).join(" "));
       },
+      error: (...args: unknown[]) => {
+        logs.push("[error] " + args.map((a) => safeStringify(a)).join(" "));
+      },
+      warn: (...args: unknown[]) => {
+        logs.push("[warn] " + args.map((a) => safeStringify(a)).join(" "));
+      },
     },
     Math,
     Date,
@@ -40,6 +46,18 @@ function runJsInSandbox(code: string): ExecResult {
     RegExp,
     Map,
     Set,
+    Symbol,
+    BigInt,
+    Promise,
+    Reflect,
+    Proxy,
+    Error,
+    TypeError,
+    RangeError,
+    SyntaxError,
+    ArrayBuffer,
+    Uint8Array,
+    Float64Array,
     parseInt,
     parseFloat,
     isNaN,

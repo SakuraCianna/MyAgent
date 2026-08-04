@@ -253,31 +253,59 @@ export async function runAgentLoop(
 export function sanitizeHistoryForLLM(messages: ChatMessage[]): ChatMessage[] {
   const sanitized: ChatMessage[] = [];
 
-  for (let i = 0; i < messages.length; i++) {
-    const current = messages[i];
+  let i = 0;
+  while (i < messages.length) {
+    const msg = messages[i];
 
-    if (current.role === "tool") {
-      // 检查前一条已保留的消息是否为带 tool_calls 的 assistant 消息
-      const prev = sanitized[sanitized.length - 1];
-      if (!prev || prev.role !== "assistant" || !prev.tool_calls || prev.tool_calls.length === 0) {
-        // 无有效关联的前置 assistant 消息，跳过该孤立的 tool 结果
-        continue;
-      }
-      // 匹配 tool_call_id
-      const hasMatchingCall = prev.tool_calls.some((tc) => tc.id === current.tool_call_id);
-      if (!hasMatchingCall && current.tool_call_id && prev.tool_calls.length > 0) {
-        prev.tool_calls[0].id = current.tool_call_id;
-      }
-    }
-
-    if (current.role === "assistant" && current.tool_calls && current.tool_calls.length > 0) {
-      current.tool_calls = current.tool_calls.map((tc, idx) => ({
+    if (msg.role === "assistant" && msg.tool_calls && msg.tool_calls.length > 0) {
+      // 保证每一个 tool_call 拥有唯一 id
+      const toolCalls = msg.tool_calls.map((tc, idx) => ({
         ...tc,
         id: tc.id || `call_${Date.now()}_${idx}`,
       }));
+
+      const assistantMsg: ChatMessage = {
+        ...msg,
+        tool_calls: toolCalls,
+      };
+      sanitized.push(assistantMsg);
+
+      // 收集紧跟在 assistant 之后的所有 tool 响应
+      let j = i + 1;
+      const toolResponses: ChatMessage[] = [];
+      while (j < messages.length && messages[j].role === "tool") {
+        toolResponses.push(messages[j]);
+        j++;
+      }
+
+      // 确保 assistantMsg 中的每一个 tool_call 都能 1:1 顺序匹配上一条 tool 响应
+      toolCalls.forEach((tc, idx) => {
+        let match = toolResponses.find((tr) => tr.tool_call_id === tc.id);
+        if (!match && toolResponses[idx]) {
+          match = { ...toolResponses[idx], tool_call_id: tc.id };
+        }
+        if (!match) {
+          match = {
+            role: "tool",
+            content: `{"status": "completed", "tool": "${tc.function.name}"}`,
+            tool_call_id: tc.id,
+          };
+        }
+        sanitized.push(match);
+      });
+
+      i = j;
+      continue;
     }
 
-    sanitized.push(current);
+    if (msg.role === "tool") {
+      // 过滤孤立无主 tool 响应
+      i++;
+      continue;
+    }
+
+    sanitized.push(msg);
+    i++;
   }
 
   return sanitized;
