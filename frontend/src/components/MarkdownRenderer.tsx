@@ -299,11 +299,34 @@ function parseMarkdownBlocks(content: string): Block[] {
 }
 
 function renderInlineText(text: string): React.ReactNode[] {
-  const tokens = text.split(/(\[.+?\]\(.+?\)|`[^`]+`|\*\*[^*]+\*\*)/g);
+  // 匹配 Markdown 图片 ![alt](url)、超链接 [label](url)、粗体 **text**、行内代码 `code`
+  const tokens = text.split(/(!\[.+?\]\(.+?\)|\[.+?\]\(.+?\)|`[^`]+`|\*\*[^*]+\*\*)/g);
 
   return tokens.map((token, idx) => {
     if (!token) return null;
 
+    // 1. Markdown 图片: ![alt](url)
+    const imgMatch = token.match(/^!\[(.+?)\]\((.+?)\)$/);
+    if (imgMatch) {
+      const alt = imgMatch[1];
+      const url = imgMatch[2];
+      return (
+        <div key={idx} className={styles.imageCardContainer}>
+          <img
+            src={url}
+            alt={alt}
+            className={styles.renderedAiImage}
+            loading="lazy"
+            onError={(e) => {
+              (e.target as HTMLImageElement).alt = `${alt} (图片生成加载中，请稍等...)`;
+            }}
+          />
+          <div className={styles.imageCardCaption}>🎨 {alt}</div>
+        </div>
+      );
+    }
+
+    // 2. Markdown 超链接: [label](url)
     const linkMatch = token.match(/^\[(.+?)\]\((.+?)\)$/);
     if (linkMatch) {
       const label = linkMatch[1];

@@ -237,3 +237,35 @@
   background: #ffffff;
   display: block;
 }
+
+/* AI 绘画图片大卡片样式 */
+.imageCardContainer {
+  margin: 12px 0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  max-width: 520px;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.renderedAiImage {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  display: block;
+}
+
+.imageCardCaption {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 500;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+}
