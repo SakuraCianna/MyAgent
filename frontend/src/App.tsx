@@ -17,6 +17,12 @@ export default function App() {
   const [showTrace, setShowTrace] = useState(false);
   const initialized = useRef(false);
 
+  // 实时保存 activeId 到 ref，解决闭包中 activeId 无法感知会话切换的问题
+  const activeIdRef = useRef(activeId);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
   const activeSession = sessions.find((s) => s.id === activeId) ?? null;
 
   function formatErrorMessage(err: unknown): string {
@@ -50,10 +56,10 @@ export default function App() {
 
   // 切换会话时，重新拉取该会话的历史消息与 Trace 历史
   useEffect(() => {
-    if (!activeId) return;
     setMessages([]);
     setTrace([]);
     setShowTrace(false);
+    if (!activeId) return;
     refreshMessages(activeId);
     refreshTrace(activeId);
   }, [activeId]);
@@ -95,10 +101,16 @@ export default function App() {
   async function handleDeleteSession(id: string) {
     try {
       await api.deleteSession(id);
+      // 如果删除的是当前选中的会话，立即同步清空 UI
+      if (activeIdRef.current === id) {
+        setMessages([]);
+        setTrace([]);
+      }
       setSessions((prev) => {
         const next = prev.filter((s) => s.id !== id);
-        if (activeId === id) {
-          setActiveId(next[0]?.id ?? null);
+        if (activeIdRef.current === id) {
+          const nextActive = next[0]?.id ?? null;
+          setActiveId(nextActive);
         }
         return next;
       });
@@ -111,6 +123,9 @@ export default function App() {
     if (!activeId || !text.trim() || sending) return;
     setError(null);
     setSending(true);
+
+    // 记录发起请求时的 sessionId，用于检测用户是否切换了对话
+    const requestSessionId = activeId;
 
     // 先乐观追加用户消息
     setMessages((prev) => [...prev, { role: "user", content: text }]);
@@ -130,7 +145,8 @@ export default function App() {
         text,
         {
           onToken: (token) => {
-            // 逐 token 追加到最后一条 assistant 消息
+            // 通过 activeIdRef.current 校验：只有当前画面展示的正是该会话时才更新 UI，彻底解决串屏 Bug！
+            if (activeIdRef.current !== requestSessionId) return;
             setMessages((prev) => {
               const next = [...prev];
               const last = next[next.length - 1];
@@ -144,7 +160,7 @@ export default function App() {
             });
           },
           onToolCall: (name) => {
-            // 工具调用阶段：在 assistant 气泡内追加工具状态提示
+            if (activeIdRef.current !== requestSessionId) return;
             setMessages((prev) => {
               const next = [...prev];
               const last = next[next.length - 1];
@@ -159,19 +175,24 @@ export default function App() {
           },
           onDone: () => {
             setSending(false);
-            refreshTrace(activeId!);
+            if (activeIdRef.current === requestSessionId) {
+              refreshTrace(requestSessionId);
+            }
             setSessions((prev) =>
               prev
-                .map((s) => (s.id === activeId ? { ...s, updatedAt: new Date().toISOString() } : s))
-                .sort((a, b) => (a.id === activeId ? -1 : b.id === activeId ? 1 : 0))
+                .map((s) => (s.id === requestSessionId ? { ...s, updatedAt: new Date().toISOString() } : s))
+                .sort((a, b) => (a.id === requestSessionId ? -1 : b.id === requestSessionId ? 1 : 0))
             );
           },
           onError: (message) => {
+            if (activeIdRef.current !== requestSessionId) {
+              setSending(false);
+              return;
+            }
             setMessages((prev) => {
               const next = [...prev];
               const last = next[next.length - 1];
               if (last?.role === "assistant" && last.content === "") {
-                // 空气泡替换为错误信息
                 next[next.length - 1] = { ...last, content: `出错了：${message}` };
               } else {
                 next.push({ role: "assistant", content: `出错了：${message}` });
@@ -186,14 +207,16 @@ export default function App() {
     } catch (err) {
       const msg = (err as Error).message;
       setError(formatErrorMessage(err));
-      setMessages((prev) => {
-        const next = [...prev];
-        const last = next[next.length - 1];
-        if (last?.role === "assistant" && last.content === "") {
-          next[next.length - 1] = { ...last, content: `出错了：${msg}` };
-        }
-        return next;
-      });
+      if (activeIdRef.current === requestSessionId) {
+        setMessages((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          if (last?.role === "assistant" && last.content === "") {
+            next[next.length - 1] = { ...last, content: `出错了：${msg}` };
+          }
+          return next;
+        });
+      }
       setSending(false);
     }
   }

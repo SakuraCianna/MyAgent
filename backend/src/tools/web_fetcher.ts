@@ -49,7 +49,7 @@ registerTool({
         .replace(/\s+/g, " ")
         .trim();
 
-      const truncated = cleanText.length > 2500 ? cleanText.slice(0, 2500) + "...(已截断超长网页内容)" : cleanText;
+      const truncated = cleanText.length > 16000 ? cleanText.slice(0, 16000) + "...(已截断超长网页内容)" : cleanText;
 
       return {
         url: rawUrl,

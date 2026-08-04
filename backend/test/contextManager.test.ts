@@ -9,10 +9,10 @@ test("Context Manager Unit Test Suite", async (t) => {
   });
 
   await t.test("truncateToolResult truncates large payloads", () => {
-    const hugeObject = { data: "x".repeat(5000) };
+    const hugeObject = { data: "x".repeat(20000) };
     const truncated = truncateToolResult(hugeObject);
-    assert.ok(truncated.length < 5000);
-    assert.ok(truncated.includes("[已截断，原始长度"));
+    assert.ok(truncated.length < 20000);
+    assert.ok(truncated.includes("已做安全截断"));
   });
 
   await t.test("compressIfNeeded preserves system prompt and short messages", () => {

@@ -59,8 +59,8 @@ function truncate(text: string, max: number): string {
  * 工具执行结果可能是大 JSON（比如 github_reader 读整个文件），
  * 塞进 context 前做长度截断，避免撑爆上下文。
  */
-export function truncateToolResult(result: unknown, maxChars = 3000): string {
+export function truncateToolResult(result: unknown, maxChars = 16000): string {
   const str = typeof result === "string" ? result : JSON.stringify(result);
   if (str.length <= maxChars) return str;
-  return str.slice(0, maxChars) + `\n...[已截断，原始长度 ${str.length} 字符]`;
+  return str.slice(0, maxChars) + `\n...[因长文章已做安全截断，原始长度 ${str.length} 字符]`;
 }

@@ -37,6 +37,7 @@ export async function chatCompletion(
     model: DEEPSEEK_MODEL,
     messages,
     temperature: 0.3,
+    max_tokens: 8192,
   };
   if (tools.length > 0) {
     body.tools = tools;
@@ -66,8 +67,9 @@ export async function chatCompletion(
     } catch {
       errBody = await response.text().catch(() => undefined);
     }
+    const errDetail = typeof errBody === "object" ? JSON.stringify(errBody) : String(errBody ?? "");
     throw new DeepSeekError(
-      `DeepSeek API 返回错误状态 ${response.status}`,
+      `DeepSeek API 返回错误状态 ${response.status}${errDetail ? `: ${errDetail}` : ""}`,
       response.status,
       errBody
     );
@@ -95,6 +97,7 @@ export async function chatCompletionStream(
     model: DEEPSEEK_MODEL,
     messages,
     temperature: 0.3,
+    max_tokens: 8192,
     stream: true,
     ...(tools.length > 0 ? { tools, tool_choice: "auto" } : {}),
   };

@@ -81,7 +81,7 @@ function loadHistory(sessionId: string): ChatMessage[] {
     if (r.tool_call_id) {
       msg.tool_call_id = r.tool_call_id;
     }
-    if (r.tool_name) {
+    if (r.tool_name && r.role !== "tool") {
       msg.name = r.tool_name;
     }
     return msg;
