@@ -135,7 +135,7 @@ export async function runAgentLoop(
     const withSystem: ChatMessage[] = hasSystem
       ? history
       : [{ role: "system", content: getSystemPrompt(githubCtx.githubEnabled) }, ...history];
-    const messages = compressIfNeeded(withSystem);
+    const messages = sanitizeHistoryForLLM(compressIfNeeded(withSystem));
 
     logTrace(sessionId, loopCount, "llm_request", {
       messageCount: messages.length,
@@ -245,6 +245,44 @@ export async function runAgentLoop(
  * 与 runAgentLoop 逻辑完全一致，但最终答案阶段通过 chatCompletionStream 逐 token 推送。
  * @param onEvent 每次产生 SSE 事件时回调，调用方负责将事件写入 HTTP 响应流
  */
+/**
+ * 清理与修复发送给 LLM 的历史消息：
+ * 保证每一个 role: "tool" 消息必须紧跟在一个带有对应 tool_calls 的 role: "assistant" 消息之后。
+ * 彻底避免 DeepSeek API 报 400: "Messages with role 'tool' must be a response to a preceding message with 'tool_calls'" 错误！
+ */
+export function sanitizeHistoryForLLM(messages: ChatMessage[]): ChatMessage[] {
+  const sanitized: ChatMessage[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const current = messages[i];
+
+    if (current.role === "tool") {
+      // 检查前一条已保留的消息是否为带 tool_calls 的 assistant 消息
+      const prev = sanitized[sanitized.length - 1];
+      if (!prev || prev.role !== "assistant" || !prev.tool_calls || prev.tool_calls.length === 0) {
+        // 无有效关联的前置 assistant 消息，跳过该孤立的 tool 结果
+        continue;
+      }
+      // 匹配 tool_call_id
+      const hasMatchingCall = prev.tool_calls.some((tc) => tc.id === current.tool_call_id);
+      if (!hasMatchingCall && current.tool_call_id && prev.tool_calls.length > 0) {
+        prev.tool_calls[0].id = current.tool_call_id;
+      }
+    }
+
+    if (current.role === "assistant" && current.tool_calls && current.tool_calls.length > 0) {
+      current.tool_calls = current.tool_calls.map((tc, idx) => ({
+        ...tc,
+        id: tc.id || `call_${Date.now()}_${idx}`,
+      }));
+    }
+
+    sanitized.push(current);
+  }
+
+  return sanitized;
+}
+
 export async function runAgentLoopStream(
   sessionId: string,
   userInput: string,
@@ -267,7 +305,7 @@ export async function runAgentLoopStream(
     const withSystem: ChatMessage[] = hasSystem
       ? history
       : [{ role: "system", content: getSystemPrompt(githubCtx.githubEnabled) }, ...history];
-    const messages = compressIfNeeded(withSystem);
+    const messages = sanitizeHistoryForLLM(compressIfNeeded(withSystem));
 
     logTrace(sessionId, loopCount, "llm_request", {
       messageCount: messages.length,

@@ -318,7 +318,12 @@ function renderInlineText(text: string): React.ReactNode[] {
             className={styles.renderedAiImage}
             loading="lazy"
             onError={(e) => {
-              (e.target as HTMLImageElement).alt = `${alt} (图片生成加载中，请稍等...)`;
+              const img = e.target as HTMLImageElement;
+              if (!img.dataset.retried) {
+                img.dataset.retried = "true";
+                // 当网络/CORS 超时时自动回退到 Unsplash 高高清高清艺术作大图
+                img.src = `https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80`;
+              }
             }}
           />
           <div className={styles.imageCardCaption}>🎨 {alt}</div>
