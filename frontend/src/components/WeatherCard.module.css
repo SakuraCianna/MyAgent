@@ -1,0 +1,236 @@
+/* 艺术诗意天气卡片与动态热浪/波浪水波动画 */
+
+.weatherPoster {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin: 16px 0;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.12);
+  }
+}
+
+/* 艺术环境外框主题色 */
+.posterSunny {
+  background: #fdf5ec;
+  color: #8c4c23;
+}
+
+.posterCloudy {
+  background: #f0ebf5;
+  color: #4a3e66;
+}
+
+.posterRainy {
+  background: #f3e8f7;
+  color: #452b59;
+}
+
+.posterSnowy {
+  background: #eef3fc;
+  color: #2b3a59;
+}
+
+.posterDefault {
+  background: #f2f7f7;
+  color: #294d4a;
+}
+
+/* 悬浮主核心胶囊玻璃卡片 */
+.innerPillCard {
+  width: 100%;
+  height: 140px;
+  border-radius: 24px;
+  padding: 20px 24px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* 阳光金辉 (Sunny) 主渐变 */
+.pillSunny {
+  background: linear-gradient(135deg, #f99849 0%, #e65c00 100%);
+}
+
+.pillCloudy {
+  background: linear-gradient(135deg, #9b8abf 0%, #6d5b94 100%);
+}
+
+.pillRainy {
+  background: linear-gradient(135deg, #a17fe0 0%, #6849a3 100%);
+}
+
+.pillSnowy {
+  background: linear-gradient(135deg, #8ba8ee 0%, #4b62b3 100%);
+}
+
+.pillDefault {
+  background: linear-gradient(135deg, #5fb4a2 0%, #307567 100%);
+}
+
+/* 底部动态热浪 / 波浪水波动画 */
+.heatwaveContainer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 52px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.wavePath1 {
+  animation: heatwaveFlow1 7s ease-in-out infinite alternate;
+}
+
+.wavePath2 {
+  animation: heatwaveFlow2 10s ease-in-out infinite alternate;
+}
+
+@keyframes heatwaveFlow1 {
+  0% {
+    transform: translateX(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(-15%) scaleY(1.15);
+  }
+  100% {
+    transform: translateX(-30%) scaleY(0.9);
+  }
+}
+
+@keyframes heatwaveFlow2 {
+  0% {
+    transform: translateX(-20%) scaleY(1.1);
+  }
+  50% {
+    transform: translateX(-10%) scaleY(0.85);
+  }
+  100% {
+    transform: translateX(0) scaleY(1.2);
+  }
+}
+
+/* 卡片内部顶栏内容 */
+.cardTopRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.tempCityGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.tempText {
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -1px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cityName {
+  font-size: 15px;
+  font-weight: 500;
+  margin-top: 4px;
+  opacity: 0.92;
+}
+
+.rightIconGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.weatherIconWrap {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+/* 动态太阳闪耀动画 */
+.sunIcon {
+  animation: sunGlow 3s infinite ease-in-out alternate;
+}
+
+.sunRays {
+  transform-origin: center;
+  animation: rayRotate 14s linear infinite;
+}
+
+@keyframes sunGlow {
+  0% { transform: scale(0.96); filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.8)); }
+  100% { transform: scale(1.08); filter: drop-shadow(0 0 14px rgba(255, 235, 59, 1)); }
+}
+
+@keyframes rayRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.dateStr {
+  font-size: 11px;
+  opacity: 0.85;
+  font-family: system-ui, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* 胶囊卡片下方的诗意名句与天气状态 */
+.poemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding: 0 4px;
+  position: relative;
+  z-index: 2;
+}
+
+.poemQuote {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
+.statusTag {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* 额外补充指标数据（体感/湿度/风速）小横排 */
+.metricsBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+  padding: 0 4px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.metricItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

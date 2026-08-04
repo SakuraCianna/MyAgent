@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.vite/
+
+# SQLite Database
+backend/data/agent.db
+backend/data/*.db*
+
+# Environment files
+.env
+!.env.example
+*.env.local
+
+# System files
+.DS_Store
+Thumbs.db

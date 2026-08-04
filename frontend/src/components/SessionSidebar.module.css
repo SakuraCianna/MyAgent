@@ -1,0 +1,131 @@
+.sidebar {
+  width: 260px;
+  background-color: var(--color-surface-container-low, #f3f3f8);
+  border-right: 1px solid var(--color-outline-variant, #e0e0e8);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px 10px;
+  gap: 12px;
+}
+
+.sidebarNewBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: var(--color-surface-container-high, #e6e0e9);
+  color: var(--color-on-surface, #1d1b20);
+  border: none;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--color-surface-container-highest, #dcd6df);
+  }
+}
+
+.sidebarList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s;
+
+  &:hover {
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--color-on-surface-variant, #49454f);
+  font-size: 13px;
+  transition: background-color 0.2s, color 0.2s;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+
+    .sidebarItemDelete {
+      opacity: 1;
+    }
+  }
+}
+
+.sidebarItemActive {
+  background-color: var(--color-secondary-container, #e8def8);
+  color: var(--color-on-secondary-container, #1d192b);
+  font-weight: 500;
+}
+
+.sidebarItemTitle {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebarItemGithub {
+  color: #2e7d32;
+  margin-left: 6px;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.sidebarItemDelete {
+  border: none;
+  background: transparent;
+  color: var(--color-on-surface-variant, #79747e);
+  padding: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    color: #ba1a1a;
+  }
+}
+
+.sidebarEmpty {
+  text-align: center;
+  color: #79747e;
+  font-size: 13px;
+  padding: 24px 0;
+}
