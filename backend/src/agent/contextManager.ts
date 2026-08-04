@@ -60,7 +60,9 @@ function truncate(text: string, max: number): string {
  * 塞进 context 前做长度截断，避免撑爆上下文。
  */
 export function truncateToolResult(result: unknown, maxChars = 16000): string {
-  const str = typeof result === "string" ? result : JSON.stringify(result);
+  if (result === undefined) return "undefined";
+  if (result === null) return "null";
+  const str = typeof result === "string" ? result : (JSON.stringify(result) ?? String(result));
   if (str.length <= maxChars) return str;
   return str.slice(0, maxChars) + `\n...[因长文章已做安全截断，原始长度 ${str.length} 字符]`;
 }

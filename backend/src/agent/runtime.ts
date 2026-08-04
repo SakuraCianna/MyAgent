@@ -247,68 +247,70 @@ export async function runAgentLoop(
  */
 /**
  * 清理与修复发送给 LLM 的历史消息：
- * 保证每一个 role: "tool" 消息必须紧跟在一个带有对应 tool_calls 的 role: "assistant" 消息之后。
- * 彻底避免 DeepSeek API 报 400: "Messages with role 'tool' must be a response to a preceding message with 'tool_calls'" 错误！
+ * 保证每一个 role: "tool" 消息必须紧跟在一个带有对应 tool_calls 的 role: "assistant" 消息之后，
+ * 且 tool_calls 列表与随后的 tool 回复消息 100% 数量完全相等匹配。
+ * 彻底避免 DeepSeek API 报 400: "An assistant message with 'tool_calls' must be followed by tool messages" 错误！
  */
 export function sanitizeHistoryForLLM(messages: ChatMessage[]): ChatMessage[] {
   const sanitized: ChatMessage[] = [];
 
-  let i = 0;
-  while (i < messages.length) {
-    const msg = messages[i];
+  for (let i = 0; i < messages.length; i++) {
+    const current = { ...messages[i] };
 
-    if (msg.role === "assistant" && msg.tool_calls && msg.tool_calls.length > 0) {
-      // 保证每一个 tool_call 拥有唯一 id
-      const toolCalls = msg.tool_calls.map((tc, idx) => ({
+    if (current.role === "tool") {
+      const prev = sanitized[sanitized.length - 1];
+      if (!prev || prev.role !== "assistant" || !prev.tool_calls || prev.tool_calls.length === 0) {
+        continue;
+      }
+    }
+
+    if (current.role === "assistant" && current.tool_calls && current.tool_calls.length > 0) {
+      current.tool_calls = current.tool_calls.map((tc, idx) => ({
         ...tc,
         id: tc.id || `call_${Date.now()}_${idx}`,
       }));
+    }
 
-      const assistantMsg: ChatMessage = {
-        ...msg,
-        tool_calls: toolCalls,
-      };
-      sanitized.push(assistantMsg);
+    sanitized.push(current);
+  }
 
-      // 收集紧跟在 assistant 之后的所有 tool 响应
+  // 第二次强效校验：对齐 assistant.tool_calls 与紧跟其后的 tool 响应消息
+  const finalMessages: ChatMessage[] = [];
+  for (let i = 0; i < sanitized.length; i++) {
+    const msg = sanitized[i];
+    if (msg.role === "assistant" && msg.tool_calls && msg.tool_calls.length > 0) {
+      const toolMsgs: ChatMessage[] = [];
       let j = i + 1;
-      const toolResponses: ChatMessage[] = [];
-      while (j < messages.length && messages[j].role === "tool") {
-        toolResponses.push(messages[j]);
+      while (j < sanitized.length && sanitized[j].role === "tool") {
+        toolMsgs.push(sanitized[j]);
         j++;
       }
 
-      // 确保 assistantMsg 中的每一个 tool_call 都能 1:1 顺序匹配上一条 tool 响应
-      toolCalls.forEach((tc, idx) => {
-        let match = toolResponses.find((tr) => tr.tool_call_id === tc.id);
-        if (!match && toolResponses[idx]) {
-          match = { ...toolResponses[idx], tool_call_id: tc.id };
+      const validCalls = msg.tool_calls.filter((tc) =>
+        toolMsgs.some((tm) => tm.tool_call_id === tc.id)
+      );
+
+      if (validCalls.length > 0) {
+        finalMessages.push({ ...msg, tool_calls: validCalls });
+        for (const tm of toolMsgs) {
+          if (validCalls.some((vc) => vc.id === tm.tool_call_id)) {
+            finalMessages.push(tm);
+          }
         }
-        if (!match) {
-          match = {
-            role: "tool",
-            content: `{"status": "completed", "tool": "${tc.function.name}"}`,
-            tool_call_id: tc.id,
-          };
-        }
-        sanitized.push(match);
-      });
-
-      i = j;
-      continue;
+        i = j - 1;
+      } else {
+        finalMessages.push({
+          ...msg,
+          tool_calls: undefined,
+          content: msg.content || "正在进行计算与工具调用...",
+        });
+      }
+    } else {
+      finalMessages.push(msg);
     }
-
-    if (msg.role === "tool") {
-      // 过滤孤立无主 tool 响应
-      i++;
-      continue;
-    }
-
-    sanitized.push(msg);
-    i++;
   }
 
-  return sanitized;
+  return finalMessages;
 }
 
 export async function runAgentLoopStream(

@@ -28,11 +28,14 @@ function runJsInSandbox(code: string): ExecResult {
       log: (...args: unknown[]) => {
         logs.push(args.map((a) => safeStringify(a)).join(" "));
       },
-      error: (...args: unknown[]) => {
-        logs.push("[error] " + args.map((a) => safeStringify(a)).join(" "));
-      },
       warn: (...args: unknown[]) => {
-        logs.push("[warn] " + args.map((a) => safeStringify(a)).join(" "));
+        logs.push("[warn]: " + args.map((a) => safeStringify(a)).join(" "));
+      },
+      error: (...args: unknown[]) => {
+        logs.push("[error]: " + args.map((a) => safeStringify(a)).join(" "));
+      },
+      info: (...args: unknown[]) => {
+        logs.push(args.map((a) => safeStringify(a)).join(" "));
       },
     },
     Math,
@@ -46,34 +49,45 @@ function runJsInSandbox(code: string): ExecResult {
     RegExp,
     Map,
     Set,
-    Symbol,
-    BigInt,
     Promise,
     Reflect,
     Proxy,
+    Symbol,
     Error,
     TypeError,
     RangeError,
     SyntaxError,
-    ArrayBuffer,
-    Uint8Array,
-    Float64Array,
     parseInt,
     parseFloat,
     isNaN,
     isFinite,
+    encodeURIComponent,
+    decodeURIComponent,
+    encodeURI,
+    decodeURI,
+    setTimeout: (fn: Function, ms?: number) => setTimeout(fn, Math.min(ms || 0, 1000)),
+    clearTimeout,
+    setInterval: (fn: Function, ms?: number) => setInterval(fn, Math.min(ms || 0, 1000)),
+    clearInterval,
+    Buffer: typeof Buffer !== "undefined" ? Buffer : undefined,
+    URL: typeof URL !== "undefined" ? URL : undefined,
+    URLSearchParams: typeof URLSearchParams !== "undefined" ? URLSearchParams : undefined,
+    TextEncoder: typeof TextEncoder !== "undefined" ? TextEncoder : undefined,
+    TextDecoder: typeof TextDecoder !== "undefined" ? TextDecoder : undefined,
   };
 
   const context = vm.createContext(sandbox);
   const wrapped = `(function() { ${code} })()`;
 
-  let result: unknown;
+  let rawResult: unknown;
   try {
     const script = new vm.Script(wrapped, { filename: "user-code.js" });
-    result = script.runInContext(context, { timeout: EXECUTION_TIMEOUT_MS });
+    rawResult = script.runInContext(context, { timeout: EXECUTION_TIMEOUT_MS });
   } catch (err) {
     throw new Error(`JavaScript 执行出错: ${(err as Error).message}`);
   }
+
+  const result = rawResult !== undefined ? rawResult : (logs.length > 0 ? logs.join("\n") : "代码执行完成");
 
   return { logs, result, language: "javascript" };
 }
