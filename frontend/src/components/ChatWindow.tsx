@@ -102,12 +102,6 @@ const TOOL_MENU_ITEMS: ToolMenuItem[] = [
     icon: "image",
   },
   {
-    id: "datetime",
-    title: "日期推算与倒计时",
-    desc: "精准计算两日期相差天数、未来日期与倒计时",
-    icon: "datetime",
-  },
-  {
     id: "compress",
     title: "上下文压缩",
     desc: "对长会话的历史对话进行摘要压缩，释放 Context 窗口",

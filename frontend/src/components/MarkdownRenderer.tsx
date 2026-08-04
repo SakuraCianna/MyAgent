@@ -410,7 +410,7 @@ function CodeBlock({ language, code }: { language?: string; code: string }) {
         </div>
       </div>
       <pre className={styles.codePre}>
-        <code>{code}</code>
+        <code>{highlightSyntax(code, language)}</code>
       </pre>
 
       {/* 内嵌 3D / HTML 网页全功能实时运行沙箱 */}
@@ -425,7 +425,7 @@ function CodeBlock({ language, code }: { language?: string; code: string }) {
           <iframe
             className={styles.liveIframe}
             srcDoc={code}
-            sandbox="allow-scripts allow-same-origin allow-modals"
+            sandbox="allow-scripts allow-modals"
             title="Interactive Web 3D Preview"
           />
         </div>
@@ -483,4 +483,43 @@ function extractWeatherFromText(content: string): WeatherData | null {
   }
 
   return null;
+}
+
+function highlightSyntax(code: string, language?: string): React.ReactNode[] {
+  const lang = (language || "").toLowerCase();
+  const lines = code.split("\n");
+
+  return lines.map((line, lineIdx) => {
+    const tokens = tokenizeCodeLine(line, lang);
+    return (
+      <div key={lineIdx}>
+        {tokens}
+      </div>
+    );
+  });
+}
+
+function tokenizeCodeLine(line: string, lang: string): React.ReactNode[] {
+  const tokenRegex = /(\/\/.+$|\/\*[\s\S]*?\*\/|#.*$|<!--[\s\S]*?-->|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`|\b(?:const|let|var|function|return|if|else|for|while|import|from|export|default|class|interface|type|async|await|try|catch|new|this|def|public|private|static|void|int|float|string|boolean|undefined|null|true|false)\b|<\/?[a-zA-Z0-9-]+|\b\d+\b)/g;
+
+  const parts = line.split(tokenRegex);
+  return parts.map((part, idx) => {
+    if (!part) return null;
+    if (part.startsWith("//") || part.startsWith("/*") || (lang === "python" && part.startsWith("#")) || part.startsWith("<!--")) {
+      return <span key={idx} className={styles.synComment}>{part}</span>;
+    }
+    if ((part.startsWith('"') && part.endsWith('"')) || (part.startsWith("'") && part.endsWith("'")) || (part.startsWith("`") && part.endsWith("`"))) {
+      return <span key={idx} className={styles.synString}>{part}</span>;
+    }
+    if (/^\b(?:const|let|var|function|return|if|else|for|while|import|from|export|default|class|interface|type|async|await|try|catch|new|this|def|public|private|static|void|int|float|string|boolean|undefined|null|true|false)\b$/.test(part)) {
+      return <span key={idx} className={styles.synKeyword}>{part}</span>;
+    }
+    if (/^<\/?[a-zA-Z0-9-]+$/.test(part)) {
+      return <span key={idx} className={styles.synTag}>{part}</span>;
+    }
+    if (/^\b\d+\b$/.test(part)) {
+      return <span key={idx} className={styles.synNumber}>{part}</span>;
+    }
+    return part;
+  });
 }

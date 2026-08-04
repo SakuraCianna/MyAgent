@@ -269,3 +269,11 @@
   background: #ffffff;
   border-top: 1px solid #f1f5f9;
 }
+
+/* 语法高亮颜色调色板 (VS Code Dark 风格) */
+.synKeyword { color: #569cd6; font-weight: 600; }
+.synString { color: #ce9178; }
+.synComment { color: #6a9955; font-style: italic; }
+.synTag { color: #4ec9b0; }
+.synNumber { color: #b5cea8; }
+.synAttr { color: #9cdcfe; }
