@@ -10,7 +10,8 @@ import { registerTool } from "./registry.js";
 
 const execFileAsync = promisify(execFile);
 const EXECUTION_TIMEOUT_MS = 2000;
-const MAX_OUTPUT_CHARS = 2000;
+const MAX_JS_OUTPUT_CHARS = 2000;  // JS/Python 等执行输出最大长度
+const MAX_HTML_CODE_CHARS = 20000; // HTML 页面代码最大长度（支持内嵌 CDN 库如 three.js）
 
 interface ExecResult {
   logs: string[];
@@ -125,7 +126,7 @@ function safeStringify(value: unknown): string {
 registerTool({
   name: "code_executor",
   description:
-    "在沙箱环境中执行简单代码，支持 JavaScript、HTML 全家桶、Python、Java、C、C++ 等多种语言。其中 HTML 代码支持在前端独立新窗口中实时预览组件效果。",
+    "在沙箱环境中执行代码，或生成可预览的 HTML 全家桶页面。支持 JavaScript（node:vm 沙箱）、HTML/CSS/JS（含 CDN 引用，如 three.js、Chart.js、D3 等，生成完整可预览网页）、Python、Java、C、C++。HTML 模式支持在前端独立新窗口中实时预览组件效果。",
   parameters: {
     type: "object",
     properties: {
@@ -147,8 +148,18 @@ registerTool({
     if (!code) {
       throw new Error("code 参数不能为空");
     }
-    if (code.length > 2000) {
-      throw new Error("代码长度超过限制（最多 2000 字符）");
+    // HTML 模式允许更大的代码体积（支持内联 CDN 三方库）
+    const isHtmlMode =
+      language === "html" ||
+      code.trim().toLowerCase().startsWith("<!doctype html") ||
+      code.includes("<html");
+    const maxLen = isHtmlMode ? MAX_HTML_CODE_CHARS : 2000;
+    if (code.length > maxLen) {
+      throw new Error(
+        isHtmlMode
+          ? `HTML 代码长度超过限制（最多 ${MAX_HTML_CODE_CHARS} 字符）`
+          : `代码长度超过限制（最多 2000 字符）`
+      );
     }
 
     let execRes: ExecResult;
@@ -169,8 +180,8 @@ registerTool({
 
     return {
       logs: execRes.logs,
-      result: resultStr.length > MAX_OUTPUT_CHARS
-        ? resultStr.slice(0, MAX_OUTPUT_CHARS) + "...[已截断]"
+      result: resultStr.length > MAX_JS_OUTPUT_CHARS
+        ? resultStr.slice(0, MAX_JS_OUTPUT_CHARS) + "...[已截断]"
         : execRes.result,
       language: execRes.language,
       previewableHtml: execRes.previewableHtml,

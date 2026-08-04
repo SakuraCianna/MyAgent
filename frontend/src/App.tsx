@@ -1,6 +1,6 @@
 // 主应用：左侧会话列表 + 右侧聊天窗口（含 ChatGPT 风格内嵌 GitHub 设置） + 可折叠执行 Trace 视图
 import { useEffect, useRef, useState } from "react";
-import { api } from "./api/client";
+import { api, sendMessageStream } from "./api/client";
 import type { SessionDto, TraceEntry } from "./api/client";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { ChatWindow, type ChatMessageView } from "./components/ChatWindow";
@@ -111,23 +111,89 @@ export default function App() {
     if (!activeId || !text.trim() || sending) return;
     setError(null);
     setSending(true);
+
+    // 先乐观追加用户消息
     setMessages((prev) => [...prev, { role: "user", content: text }]);
+
+    // 追加一个空的 assistant 气泡，后续逐 token 填充（打字机效果）
+    const assistantPlaceholderId = `streaming-${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      { id: assistantPlaceholderId, role: "assistant", content: "" },
+    ]);
+
+    const abortCtrl = new AbortController();
+
     try {
-      const reply = await api.sendMessage(activeId, text);
-      setMessages((prev) => [...prev, { role: "assistant", content: reply.finalAnswer }]);
-      refreshTrace(activeId);
-      setSessions((prev) =>
-        prev
-          .map((s) => (s.id === activeId ? { ...s, updatedAt: new Date().toISOString() } : s))
-          .sort((a, b) => (a.id === activeId ? -1 : b.id === activeId ? 1 : 0))
+      await sendMessageStream(
+        activeId,
+        text,
+        {
+          onToken: (token) => {
+            // 逐 token 追加到最后一条 assistant 消息
+            setMessages((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last?.role === "assistant") {
+                next[next.length - 1] = {
+                  ...last,
+                  content: last.content + token,
+                };
+              }
+              return next;
+            });
+          },
+          onToolCall: (name) => {
+            // 工具调用阶段：在 assistant 气泡内追加工具状态提示
+            setMessages((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last?.role === "assistant") {
+                next[next.length - 1] = {
+                  ...last,
+                  content: last.content + `\n\n⚙️ *正在调用工具：\`${name}\`...*`,
+                };
+              }
+              return next;
+            });
+          },
+          onDone: () => {
+            setSending(false);
+            refreshTrace(activeId!);
+            setSessions((prev) =>
+              prev
+                .map((s) => (s.id === activeId ? { ...s, updatedAt: new Date().toISOString() } : s))
+                .sort((a, b) => (a.id === activeId ? -1 : b.id === activeId ? 1 : 0))
+            );
+          },
+          onError: (message) => {
+            setMessages((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last?.role === "assistant" && last.content === "") {
+                // 空气泡替换为错误信息
+                next[next.length - 1] = { ...last, content: `出错了：${message}` };
+              } else {
+                next.push({ role: "assistant", content: `出错了：${message}` });
+              }
+              return next;
+            });
+            setSending(false);
+          },
+        },
+        abortCtrl.signal
       );
     } catch (err) {
-      setError((err as Error).message);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: `出错了：${(err as Error).message}` },
-      ]);
-    } finally {
+      const msg = (err as Error).message;
+      setError(formatErrorMessage(err));
+      setMessages((prev) => {
+        const next = [...prev];
+        const last = next[next.length - 1];
+        if (last?.role === "assistant" && last.content === "") {
+          next[next.length - 1] = { ...last, content: `出错了：${msg}` };
+        }
+        return next;
+      });
       setSending(false);
     }
   }

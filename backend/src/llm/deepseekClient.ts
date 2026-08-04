@@ -1,4 +1,4 @@
-// DeepSeek Chat Completions 客户端封装（OpenAI 兼容协议）
+// DeepSeek Chat Completions 客户端封装（OpenAI 兼容协议），支持标准与 SSE 流式传输
 import type {
   ChatCompletionRequest,
   ChatCompletionResponse,
@@ -22,8 +22,7 @@ export class DeepSeekError extends Error {
 }
 
 /**
- * 调用 DeepSeek Chat Completions 接口。
- * 不依赖任何 agent 框架 / OpenAI SDK，仅用原生 fetch 直接对接 REST API。
+ * 调用 DeepSeek Chat Completions 接口（非流式）。
  */
 export async function chatCompletion(
   messages: ChatMessage[],
@@ -76,4 +75,113 @@ export async function chatCompletion(
 
   const data = (await response.json()) as ChatCompletionResponse;
   return data;
+}
+
+/**
+ * 调用 DeepSeek Chat Completions 接口（SSE 真流式）。
+ * 在生成文本 token 时回调 onChunk 实时推送给客户端。
+ */
+export async function chatCompletionStream(
+  messages: ChatMessage[],
+  tools: ToolSchema[],
+  onChunk: (token: string) => void
+): Promise<ChatCompletionResponse> {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) {
+    return chatCompletion(messages, tools);
+  }
+
+  const body = {
+    model: DEEPSEEK_MODEL,
+    messages,
+    temperature: 0.3,
+    stream: true,
+    ...(tools.length > 0 ? { tools, tool_choice: "auto" } : {}),
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(DEEPSEEK_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return chatCompletion(messages, tools);
+  }
+
+  if (!response.ok || !response.body) {
+    return chatCompletion(messages, tools);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let fullContent = "";
+  type ToolCallItem = NonNullable<ChatCompletionResponse["choices"][0]["message"]["tool_calls"]>[number];
+  let toolCalls: ToolCallItem[] | undefined = undefined;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const dataStr = trimmed.slice(5).trim();
+      if (dataStr === "[DONE]") break;
+
+      try {
+        const json = JSON.parse(dataStr);
+        const delta = json.choices?.[0]?.delta;
+        if (delta?.content) {
+          fullContent += delta.content;
+          onChunk(delta.content);
+        }
+        if (delta?.tool_calls) {
+          if (!toolCalls) toolCalls = [];
+          for (const tc of delta.tool_calls) {
+            const idx = tc.index ?? 0;
+            if (!toolCalls[idx]) {
+              toolCalls[idx] = {
+                id: tc.id || `call_${Date.now()}_${idx}`,
+                type: "function",
+                function: {
+                  name: tc.function?.name || "",
+                  arguments: tc.function?.arguments || "",
+                },
+              };
+            } else {
+              if (tc.function?.name) toolCalls[idx].function.name += tc.function.name;
+              if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
+            }
+          }
+        }
+      } catch {
+        // Ignore chunk parsing errors
+      }
+    }
+  }
+
+  return {
+    id: `stream_${Date.now()}`,
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: "assistant" as const,
+          content: fullContent || null,
+          tool_calls: toolCalls,
+        },
+        finish_reason: toolCalls ? "tool_calls" : "stop",
+      },
+    ],
+  };
 }

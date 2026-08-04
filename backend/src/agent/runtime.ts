@@ -1,6 +1,6 @@
 // Agent Runtime 核心循环：完全自实现，不依赖任何 agent 框架
 import { randomUUID } from "node:crypto";
-import { chatCompletion, DeepSeekError } from "../llm/deepseekClient.js";
+import { chatCompletion, chatCompletionStream, DeepSeekError } from "../llm/deepseekClient.js";
 import type { ChatMessage } from "../llm/types.js";
 import { parseAssistantMessage } from "./outputParser.js";
 import { compressIfNeeded, truncateToolResult, MAX_LOOP_COUNT } from "./contextManager.js";
@@ -42,6 +42,13 @@ export interface RunLoopResult {
   finalAnswer: string;
   loopCount: number;
 }
+
+export type SseEvent =
+  | { type: "token"; data: string }
+  | { type: "tool_call"; data: { name: string } }
+  | { type: "tool_result"; data: { name: string } }
+  | { type: "done"; data: { loopCount: number } }
+  | { type: "error"; data: { message: string } };
 
 interface DbMessageRow {
   id: string;
@@ -229,4 +236,130 @@ export async function runAgentLoop(
   logTrace(sessionId, loopCount, "max_loop_reached", { maxLoopCount: MAX_LOOP_COUNT });
   persistMessage(sessionId, { role: "assistant", content: maxLoopMessage });
   return { finalAnswer: maxLoopMessage, loopCount };
+}
+
+/**
+ * Agent Runtime SSE 流式主循环：
+ * 与 runAgentLoop 逻辑完全一致，但最终答案阶段通过 chatCompletionStream 逐 token 推送。
+ * @param onEvent 每次产生 SSE 事件时回调，调用方负责将事件写入 HTTP 响应流
+ */
+export async function runAgentLoopStream(
+  sessionId: string,
+  userInput: string,
+  onEvent: (event: SseEvent) => void
+): Promise<void> {
+  persistMessage(sessionId, { role: "user", content: userInput });
+  touchSession(sessionId);
+
+  const githubCtx = getGithubContext(sessionId);
+  const activeTools = getActiveTools({ githubEnabled: githubCtx.githubEnabled });
+  const toolSchema = toOpenAISchema(activeTools);
+
+  let loopCount = 0;
+
+  while (loopCount < MAX_LOOP_COUNT) {
+    logTrace(sessionId, loopCount, "loop_start", { loopCount });
+
+    const history = loadHistory(sessionId);
+    const hasSystem = history.some((m) => m.role === "system");
+    const withSystem: ChatMessage[] = hasSystem
+      ? history
+      : [{ role: "system", content: getSystemPrompt(githubCtx.githubEnabled) }, ...history];
+    const messages = compressIfNeeded(withSystem);
+
+    logTrace(sessionId, loopCount, "llm_request", {
+      messageCount: messages.length,
+      toolCount: toolSchema.length,
+    });
+
+    let assistantMessage: ChatMessage;
+    try {
+      // 判断是否还有工具调用空间：只在最后一个可能是纯文本回复的轮次开启流式
+      const response = await chatCompletionStream(messages, toolSchema, (token) => {
+        onEvent({ type: "token", data: token });
+      });
+      const choice = response.choices[0];
+      if (!choice) throw new Error("DeepSeek API 返回结果为空（无 choices）");
+      assistantMessage = choice.message;
+    } catch (err) {
+      const message =
+        err instanceof DeepSeekError
+          ? `LLM 调用失败: ${err.message}`
+          : `LLM 调用异常: ${(err as Error).message}`;
+      logTrace(sessionId, loopCount, "error", { message });
+      persistMessage(sessionId, { role: "assistant", content: message });
+      onEvent({ type: "error", data: { message } });
+      return;
+    }
+
+    logTrace(sessionId, loopCount, "llm_response", {
+      content: assistantMessage.content,
+      toolCallCount: assistantMessage.tool_calls?.length ?? 0,
+    });
+
+    let parsed;
+    try {
+      parsed = parseAssistantMessage(assistantMessage);
+    } catch (err) {
+      const message = `解析模型输出失败: ${(err as Error).message}`;
+      logTrace(sessionId, loopCount, "error", { message });
+      persistMessage(sessionId, { role: "assistant", content: message });
+      onEvent({ type: "error", data: { message } });
+      return;
+    }
+
+    // 无工具调用 -> 直接回复，token 已由 chatCompletionStream 推送完毕
+    if (!parsed.toolCalls || parsed.toolCalls.length === 0) {
+      const finalAnswer = parsed.finalAnswer ?? assistantMessage.content ?? "";
+      persistMessage(sessionId, {
+        role: "assistant",
+        content: assistantMessage.content ?? finalAnswer,
+      });
+      logTrace(sessionId, loopCount, "final_answer", { finalAnswer });
+      onEvent({ type: "done", data: { loopCount } });
+      return;
+    }
+
+    // 有工具调用：记录 assistant 意图
+    persistMessage(sessionId, {
+      role: "assistant",
+      content: assistantMessage.content ?? null,
+      tool_calls: assistantMessage.tool_calls,
+    });
+
+    for (const call of parsed.toolCalls) {
+      onEvent({ type: "tool_call", data: { name: call.name } });
+      logTrace(sessionId, loopCount, "tool_call", { name: call.name, arguments: call.arguments });
+
+      let resultPayload: unknown;
+      const tool = getTool(call.name);
+      try {
+        if (!tool) throw new Error(`未知工具: ${call.name}`);
+        resultPayload = await tool.execute(call.arguments, {
+          sessionId,
+          githubToken: githubCtx.githubToken,
+          githubRepo: githubCtx.githubRepo,
+        });
+        logTrace(sessionId, loopCount, "tool_result", { name: call.name, result: resultPayload });
+      } catch (err) {
+        resultPayload = { error: (err as Error).message };
+        logTrace(sessionId, loopCount, "tool_error", { name: call.name, error: (err as Error).message });
+      }
+
+      persistMessage(sessionId, {
+        role: "tool",
+        content: truncateToolResult(resultPayload),
+        tool_call_id: call.id,
+        toolName: call.name,
+      });
+      onEvent({ type: "tool_result", data: { name: call.name } });
+    }
+
+    loopCount++;
+  }
+
+  const maxLoopMessage = "已达最大循环次数（工具调用轮次过多），请简化问题或换个方式提问。";
+  logTrace(sessionId, loopCount, "max_loop_reached", { maxLoopCount: MAX_LOOP_COUNT });
+  persistMessage(sessionId, { role: "assistant", content: maxLoopMessage });
+  onEvent({ type: "error", data: { message: maxLoopMessage } });
 }

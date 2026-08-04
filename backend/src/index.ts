@@ -5,6 +5,7 @@ import cors from "cors";
 import { registerAllTools } from "./tools/registry.js";
 import { sessionsRouter } from "./routes/sessions.js";
 import { chatRouter } from "./routes/chat.js";
+import { chatStreamRouter } from "./routes/chatStream.js";
 import { toolsRouter } from "./routes/tools.js";
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
 app.use("/api/sessions", sessionsRouter);
+app.use("/api/chat/stream", chatStreamRouter);  // SSE 流式路由，必须在 /api/chat 之前注册
 app.use("/api/chat", chatRouter);
 app.use("/api/tools", toolsRouter);
 
