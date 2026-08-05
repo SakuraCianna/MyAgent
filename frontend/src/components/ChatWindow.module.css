@@ -73,9 +73,20 @@
 }
 
 .bubbleUser {
-  background-color: var(--color-primary, #0b57d0);
-  color: #ffffff;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  color: #ffffff !important;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.15);
+
+  /* 强制覆盖用户气泡内 MarkdownRenderer 所有文本、列表、标题为高清晰纯白 */
+  * {
+    color: #ffffff !important;
+  }
+
+  a {
+    color: #93c5fd !important;
+    text-decoration: underline;
+  }
 }
 
 .bubbleAssistant {
