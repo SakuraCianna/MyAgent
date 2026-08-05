@@ -132,14 +132,14 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
                   <span>⚙️</span>
                   <span>正在调用工具 <code className={styles.toolNameBadge}>{toolName}</code>...</span>
                 </div>
-                {remainingText && <p style={{ marginTop: "6px" }}>{renderInlineText(remainingText)}</p>}
+                {remainingText && <div style={{ marginTop: "6px" }}>{renderInlineText(remainingText)}</div>}
               </div>
             );
           }
 
-          return <p key={idx}>{renderInlineText(block.text)}</p>;
+          return <div key={idx} className={styles.mdParagraph}>{renderInlineText(block.text)}</div>;
         }
-        return <p key={idx}>{renderInlineText(block.text)}</p>;
+        return <div key={idx} className={styles.mdParagraph}>{renderInlineText(block.text)}</div>;
       })}
     </div>
   );

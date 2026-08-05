@@ -4,8 +4,9 @@
   color: var(--color-on-surface, #1d1b20);
   word-break: break-word;
 
-  p {
+  p, .mdParagraph {
     margin-bottom: 8px;
+    line-height: 1.6;
     &:last-child {
       margin-bottom: 0;
     }
