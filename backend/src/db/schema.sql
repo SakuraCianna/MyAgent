@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS messages (
   session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   role TEXT NOT NULL, -- user | assistant | tool | system
   content TEXT,
+  reasoning_content TEXT, -- DeepSeek-R1 / Thinking 模式思考过程
   tool_calls_json TEXT, -- assistant 消息中携带的工具调用意图（JSON 数组）
   tool_call_id TEXT,    -- tool 消息对应的调用 id
   tool_name TEXT,       -- tool 消息对应的工具名（便于展示）

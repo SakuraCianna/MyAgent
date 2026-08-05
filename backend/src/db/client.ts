@@ -21,6 +21,13 @@ export function getDb(): DatabaseSync {
     const schemaSql = fs.readFileSync(schemaPath, "utf-8");
     dbInstance.exec(schemaSql);
 
+    // 增加表列自动迁移升级检测（对旧库补充 reasoning_content 列）
+    try {
+      dbInstance.exec("ALTER TABLE messages ADD COLUMN reasoning_content TEXT;");
+    } catch {
+      // 列如果已存在则忽略
+    }
+
     // 开启外键约束与 WAL 模式（内存数据库不开启 WAL）
     dbInstance.exec("PRAGMA foreign_keys = ON;");
     if (dbPath !== ":memory:") {

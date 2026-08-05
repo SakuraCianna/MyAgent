@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { SessionDto } from "../api/client";
 import styles from "./SessionSidebar.module.css";
 
@@ -9,15 +10,57 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-export function SessionSidebar({ sessions, activeId, onSelect, onCreate, onDelete }: Props) {
+export function SessionSidebar({
+  sessions,
+  activeId,
+  onSelect,
+  onCreate,
+  onDelete,
+}: Props) {
+  const [showPluginsModal, setShowPluginsModal] = useState(false);
+
   return (
     <aside className={styles.sidebar}>
-      <button className={styles.sidebarNewBtn} onClick={onCreate}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-        新建会话
-      </button>
+      {/* 顶部 Header: 应用名 MyAgent */}
+      <div className={styles.sidebarHeader}>
+        <div className={styles.brandTitle}>
+          <span className={styles.brandName}>MyAgent</span>
+          <span className={styles.brandBadge}>Plus</span>
+        </div>
+        <div className={styles.headerIcons}>
+          <button className={styles.iconBtn} title="新建聊天" onClick={onCreate}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* 类似 ChatGPT 侧边栏的顶部快捷功能导航 (新聊天 / 插件) */}
+      <div className={styles.navSection}>
+        <button className={styles.navItem} onClick={onCreate}>
+          <svg className={styles.navIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          <span>新聊天</span>
+        </button>
+
+        <button
+          className={styles.navItem}
+          onClick={() => setShowPluginsModal(true)}
+        >
+          <svg className={styles.navIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
+          <span>插件</span>
+        </button>
+      </div>
+
+      <div className={styles.divider} />
+
+      {/* 历史对话列表 */}
+      <div className={styles.sessionSectionTitle}>最近对话</div>
       <div className={styles.sidebarList}>
         {sessions.map((s) => (
           <div
@@ -54,8 +97,53 @@ export function SessionSidebar({ sessions, activeId, onSelect, onCreate, onDelet
             </button>
           </div>
         ))}
-        {sessions.length === 0 && <div className={styles.sidebarEmpty}>暂无会话</div>}
+        {sessions.length === 0 && <div className={styles.sidebarEmpty}>暂无历史对话</div>}
       </div>
+
+      {/* 插件扩展 Modal 弹窗 */}
+      {showPluginsModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowPluginsModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitleWrap}>
+                <span className={styles.modalBadge}>MyAgent</span>
+                <h3>内置插件能力库</h3>
+              </div>
+              <button className={styles.closeBtn} onClick={() => setShowPluginsModal(false)}>✕</button>
+            </div>
+            <div className={styles.pluginList}>
+              <div className={styles.pluginCard}>
+                <span className={styles.pluginIcon}>🔍</span>
+                <div className={styles.pluginBody}>
+                  <h4>网络搜索与网页深度阅读</h4>
+                  <p>实时抓取全网最新资讯、技术文档与资讯摘要</p>
+                </div>
+              </div>
+              <div className={styles.pluginCard}>
+                <span className={styles.pluginIcon}>🖼️</span>
+                <div className={styles.pluginBody}>
+                  <h4>后端神经网络 OCR 识图</h4>
+                  <p>基于离线深度神经网络，精确解析照片与文档中字迹</p>
+                </div>
+              </div>
+              <div className={styles.pluginCard}>
+                <span className={styles.pluginIcon}>🐙</span>
+                <div className={styles.pluginBody}>
+                  <h4>GitHub 智查插件</h4>
+                  <p>支持读取关联仓库的源码文件、提交记录与 Issues</p>
+                </div>
+              </div>
+              <div className={styles.pluginCard}>
+                <span className={styles.pluginIcon}>📊</span>
+                <div className={styles.pluginBody}>
+                  <h4>ChatGPT Code Interpreter 图表绘制</h4>
+                  <p>自动分析数据并生成交互式可视化统计图表</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

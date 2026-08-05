@@ -1,31 +1,113 @@
 .sidebar {
   width: 260px;
-  background-color: var(--color-surface-container-low, #f3f3f8);
-  border-right: 1px solid var(--color-outline-variant, #e0e0e8);
+  background-color: #f9f9fb;
+  border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 16px 10px;
-  gap: 12px;
+  padding: 14px 10px;
+  gap: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Google Sans", "Segoe UI", Roboto, sans-serif;
+  user-select: none;
 }
 
-.sidebarNewBtn {
+.sidebarHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background-color: var(--color-surface-container-high, #e6e0e9);
-  color: var(--color-on-surface, #1d1b20);
+  justify-content: space-between;
+  padding: 4px 6px 8px 6px;
+}
+
+.brandTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brandName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.4px;
+}
+
+.brandBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+
+.headerIcons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iconBtn {
   border: none;
-  border-radius: 16px;
-  font-size: 14px;
-  font-weight: 500;
+  background: transparent;
+  color: #64748b;
+  padding: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 
   &:hover {
-    background-color: var(--color-surface-container-highest, #dcd6df);
+    background: #e2e8f0;
+    color: #0f172a;
   }
+}
+
+.navSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+
+  &:hover {
+    background-color: #ececf1;
+  }
+}
+
+.navIcon {
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 6px;
+}
+
+.sessionSectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  padding: 6px 8px 2px 8px;
+  letter-spacing: 0.5px;
 }
 
 .sidebarList {
@@ -33,15 +115,9 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-right: 6px;
+  gap: 2px;
+  padding-right: 4px;
   scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s;
-
-  &:hover {
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-  }
 
   &::-webkit-scrollbar {
     width: 4px;
@@ -52,17 +128,8 @@
   }
 
   &::-webkit-scrollbar-thumb {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.1);
     border-radius: 4px;
-    transition: background-color 0.3s;
-  }
-
-  &:hover::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -70,15 +137,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
   cursor: pointer;
-  color: var(--color-on-surface-variant, #49454f);
-  font-size: 13px;
-  transition: background-color 0.2s, color 0.2s;
+  color: #334155;
+  font-size: 13.5px;
+  transition: background-color 0.15s ease;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: #f1f5f9;
 
     .sidebarItemDelete {
       opacity: 1;
@@ -87,9 +154,9 @@
 }
 
 .sidebarItemActive {
-  background-color: var(--color-secondary-container, #e8def8);
-  color: var(--color-on-secondary-container, #1d192b);
-  font-weight: 500;
+  background-color: #e2e8f0;
+  color: #0f172a;
+  font-weight: 600;
 }
 
 .sidebarItemTitle {
@@ -100,7 +167,7 @@
 }
 
 .sidebarItemGithub {
-  color: #2e7d32;
+  color: #16a34a;
   margin-left: 6px;
   margin-right: 4px;
   flex-shrink: 0;
@@ -109,23 +176,134 @@
 .sidebarItemDelete {
   border: none;
   background: transparent;
-  color: var(--color-on-surface-variant, #79747e);
+  color: #94a3b8;
   padding: 2px;
   border-radius: 4px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s, color 0.2s;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
 
   &:hover {
-    color: #ba1a1a;
+    color: #ef4444;
+    background: #fee2e2;
   }
 }
 
 .sidebarEmpty {
   text-align: center;
-  color: #79747e;
-  font-size: 13px;
+  color: #94a3b8;
+  font-size: 12.5px;
   padding: 24px 0;
+}
+
+/* Modal 插件库弹窗样式 */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modalContent {
+  width: 440px;
+  max-width: 90vw;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modalTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+}
+
+.modalBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.closeBtn {
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+
+  &:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+}
+
+.pluginList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pluginCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.pluginIcon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.pluginBody {
+  h4 {
+    margin: 0 0 4px 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+  p {
+    margin: 0;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.4;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }

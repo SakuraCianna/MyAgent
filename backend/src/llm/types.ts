@@ -16,6 +16,7 @@ export interface ToolCall {
 export interface ChatMessage {
   role: ChatRole;
   content: string | null;
+  reasoning_content?: string | null;
   tool_calls?: ToolCall[];
   tool_call_id?: string; // role=tool 时必填
   name?: string; // role=tool 时可携带工具名，便于调试

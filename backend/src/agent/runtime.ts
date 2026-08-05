@@ -57,6 +57,7 @@ interface DbMessageRow {
   session_id: string;
   role: string;
   content: string | null;
+  reasoning_content: string | null;
   tool_calls_json: string | null;
   tool_call_id: string | null;
   tool_name: string | null;
@@ -67,7 +68,7 @@ function loadHistory(sessionId: string): ChatMessage[] {
   const db = getDb();
   const rows = db
     .prepare(
-      `SELECT id, session_id, role, content, tool_calls_json, tool_call_id, tool_name, created_at
+      `SELECT id, session_id, role, content, reasoning_content, tool_calls_json, tool_call_id, tool_name, created_at
        FROM messages WHERE session_id = ? ORDER BY created_at ASC`
     )
     .all(sessionId) as unknown as DbMessageRow[];
@@ -76,6 +77,7 @@ function loadHistory(sessionId: string): ChatMessage[] {
     const msg: ChatMessage = {
       role: r.role as ChatMessage["role"],
       content: r.content,
+      reasoning_content: r.reasoning_content ?? undefined,
     };
     if (r.tool_calls_json) {
       msg.tool_calls = JSON.parse(r.tool_calls_json);
@@ -96,13 +98,14 @@ function persistMessage(
 ): void {
   const db = getDb();
   db.prepare(
-    `INSERT INTO messages (id, session_id, role, content, tool_calls_json, tool_call_id, tool_name)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO messages (id, session_id, role, content, reasoning_content, tool_calls_json, tool_call_id, tool_name)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     randomUUID(),
     sessionId,
     msg.role,
     msg.content ?? null,
+    msg.reasoning_content ?? null,
     msg.tool_calls ? JSON.stringify(msg.tool_calls) : null,
     msg.tool_call_id ?? null,
     msg.toolName ?? msg.name ?? null
@@ -269,6 +272,9 @@ export function sanitizeHistoryForLLM(messages: ChatMessage[]): ChatMessage[] {
         ...tc,
         id: tc.id || `call_${Date.now()}_${idx}`,
       }));
+      if (current.reasoning_content === undefined) {
+        current.reasoning_content = "";
+      }
     }
 
     sanitized.push(current);
