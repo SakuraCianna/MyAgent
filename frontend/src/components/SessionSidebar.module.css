@@ -31,16 +31,6 @@
   letter-spacing: -0.4px;
 }
 
-.brandBadge {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  padding: 1px 5px;
-  border-radius: 6px;
-}
-
 .headerIcons {
   display: flex;
   align-items: center;
@@ -85,10 +75,17 @@
   cursor: pointer;
   transition: background 0.15s ease;
   text-align: left;
+  position: relative;
 
   &:hover {
     background-color: #ececf1;
   }
+}
+
+.connectedDot {
+  margin-left: auto;
+  color: #16a34a;
+  font-size: 10px;
 }
 
 .navIcon {
@@ -117,7 +114,6 @@
   flex-direction: column;
   gap: 2px;
   padding-right: 4px;
-  scrollbar-width: thin;
 
   &::-webkit-scrollbar {
     width: 4px;
@@ -198,12 +194,12 @@
   padding: 24px 0;
 }
 
-/* Modal 插件库弹窗样式 */
+/* 外部 API 插件配置 Modal 弹窗样式 */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,8 +212,8 @@
   max-width: 90vw;
   background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -231,12 +227,12 @@
 
 .modalTitleWrap {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
 
   h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
     color: #0f172a;
   }
@@ -246,9 +242,7 @@
   font-size: 11px;
   font-weight: 700;
   color: #2563eb;
-  background: #eff6ff;
-  padding: 2px 6px;
-  border-radius: 6px;
+  letter-spacing: 0.3px;
 }
 
 .closeBtn {
@@ -267,39 +261,105 @@
   }
 }
 
-.pluginList {
+.modalBody {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
-.pluginCard {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
+.pluginIntro {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 10px;
+  padding: 10px 12px;
 }
 
-.pluginIcon {
-  font-size: 22px;
-  line-height: 1;
+.pluginError {
+  padding: 8px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 8px;
+  font-size: 12.5px;
 }
 
-.pluginBody {
-  h4 {
-    margin: 0 0 4px 0;
-    font-size: 13.5px;
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 13px;
     font-weight: 600;
     color: #1e293b;
   }
-  p {
-    margin: 0;
-    font-size: 12px;
-    color: #64748b;
-    line-height: 1.4;
+
+  input {
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color 0.15s;
+
+    &:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+  }
+}
+
+.subText {
+  font-size: 11px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.modalActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.saveBtn {
+  padding: 9px 16px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.disconnectBtn {
+  padding: 9px 14px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #fecaca;
   }
 }
 

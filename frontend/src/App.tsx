@@ -247,6 +247,8 @@ export default function App() {
         onSelect={setActiveId}
         onCreate={handleNewSession}
         onDelete={handleDeleteSession}
+        activeSession={activeSession}
+        onGithubChange={handleGithubChange}
       />
       <div className="app-main">
         <header className="app-header">
