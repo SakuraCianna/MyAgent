@@ -11,8 +11,12 @@ import { ChartCard, type ChartData } from "./ChartCard";
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   if (!content) return null;
 
-  const blocks = parseMarkdownBlocks(content);
-  const textWeather = extractWeatherFromText(content);
+  // 隐藏后台识别提示与 HTML 系统注释，前端消息气泡仅展示清晰图片卡片与用户提问
+  const displayContent = content.replace(/<!--[\s\S]*?-->/g, "").trim();
+  if (!displayContent) return null;
+
+  const blocks = parseMarkdownBlocks(displayContent);
+  const textWeather = extractWeatherFromText(displayContent);
 
   return (
     <div className={styles.markdownBody}>

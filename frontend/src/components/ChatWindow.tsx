@@ -280,7 +280,7 @@ export function ChatWindow({
     let payload = text;
     if (attachment) {
       if (attachment.type === "image") {
-        payload = `![${attachment.name}](${attachment.dataUrl})\n\n[已上传图片: ${attachment.name}]\n[视觉识别与文本提取分析]:\n${attachment.extractedText || ""}\n\n${text}`.trim();
+        payload = `![${attachment.name}](${attachment.dataUrl})\n\n${text}\n\n<!-- [后台图像 OCR 神经网络与特征解析数据]:\n${attachment.extractedText || ""}\n-->`.trim();
       } else {
         payload = `[已上传文件: ${attachment.name}]\n\`\`\`\n${attachment.extractedText || ""}\n\`\`\`\n\n${text}`.trim();
       }
