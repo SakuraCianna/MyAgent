@@ -8,7 +8,7 @@ import type {
 
 const DEEPSEEK_API_URL =
   process.env.DEEPSEEK_API_URL ?? "https://api.deepseek.com/chat/completions";
-const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-chat";
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
 
 export class DeepSeekError extends Error {
   constructor(
