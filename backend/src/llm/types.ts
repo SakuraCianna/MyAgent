@@ -51,6 +51,7 @@ export interface ChatCompletionRequest {
   tools?: ToolSchema[];
   tool_choice?: "auto" | "none";
   temperature?: number;
+  max_tokens?: number;
 }
 
 export interface ChatCompletionChoice {
