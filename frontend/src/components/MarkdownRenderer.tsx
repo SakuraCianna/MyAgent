@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WeatherCard, type WeatherData } from "./WeatherCard";
+import { ChartCard, type ChartData } from "./ChartCard";
 import styles from "./MarkdownRenderer.module.css";
 
 interface MarkdownRendererProps {
   content: string;
 }
-
-import { ChartCard, type ChartData } from "./ChartCard";
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   if (!content) return null;
@@ -17,10 +16,14 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
   const blocks = parseMarkdownBlocks(displayContent);
   const textWeather = extractWeatherFromText(displayContent);
+  const textCharts = extractChartsFromText(displayContent);
 
   return (
     <div className={styles.markdownBody}>
       {textWeather && <WeatherCard data={textWeather} />}
+      {textCharts.map((chart, cIdx) => (
+        <ChartCard key={`extracted-chart-${cIdx}`} data={chart} />
+      ))}
       {blocks.map((block, idx) => {
         if (block.type === "code") {
           if (block.language === "weather" || isWeatherJson(block.text)) {
@@ -260,19 +263,7 @@ function parseMarkdownBlocks(content: string): Block[] {
       flushList();
     }
 
-    // Blockquote
-    if (line.trim().startsWith(">")) {
-      blocks.push({ type: "blockquote", text: line.trim().slice(1).trim() });
-      continue;
-    }
-
-    // Horizontal Rule
-    if (/^(\-\-\-|\*\*\*|___)$/.test(line.trim())) {
-      blocks.push({ type: "hr", text: "" });
-      continue;
-    }
-
-    // Headings
+    // Heading check
     const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
     if (headingMatch) {
       blocks.push({
@@ -283,6 +274,22 @@ function parseMarkdownBlocks(content: string): Block[] {
       continue;
     }
 
+    // Blockquote check
+    if (line.trim().startsWith(">")) {
+      blocks.push({
+        type: "blockquote",
+        text: line.trim().replace(/^>\s*/, ""),
+      });
+      continue;
+    }
+
+    // HR check
+    if (/^---$|^\*\*\*$|^___$/.test(line.trim())) {
+      blocks.push({ type: "hr", text: "" });
+      continue;
+    }
+
+    // Regular paragraph line
     if (line.trim() !== "") {
       blocks.push({ type: "paragraph", text: line });
     }
@@ -325,7 +332,7 @@ function renderInlineText(text: string): React.ReactNode[] {
               const img = e.target as HTMLImageElement;
               if (!img.dataset.retried) {
                 img.dataset.retried = "true";
-                // 当网络/CORS 超时时自动回退到 Unsplash 高高清高清艺术作大图
+                // 当网络/CORS 超时时自动回退到 Unsplash 高高清艺术作大图
                 img.src = `https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80`;
               }
             }}
@@ -366,6 +373,15 @@ function renderInlineText(text: string): React.ReactNode[] {
 function CodeBlock({ language, code }: { language?: string; code: string }) {
   const [copied, setCopied] = useState(false);
   const [showLivePreview, setShowLivePreview] = useState(true);
+  const [liveDoc, setLiveDoc] = useState(code);
+
+  // 防抖更新 liveDoc，避免 SSE 真流式传输时每个字符反复触发 iframe 重载导致渲染中断/黑屏
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLiveDoc(code);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [code]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
@@ -396,6 +412,14 @@ function CodeBlock({ language, code }: { language?: string; code: string }) {
         <div>
           {isHtml && (
             <>
+              <button
+                type="button"
+                className={styles.previewBtn}
+                onClick={() => setLiveDoc(code)}
+                title="立即手动刷新实时 3D 渲染画面"
+              >
+                刷新预览 🔄
+              </button>
               <button
                 type="button"
                 className={styles.previewBtn}
@@ -432,8 +456,9 @@ function CodeBlock({ language, code }: { language?: string; code: string }) {
             </span>
           </div>
           <iframe
+            key={liveDoc.length}
             className={styles.liveIframe}
-            srcDoc={code}
+            srcDoc={liveDoc}
             sandbox="allow-scripts allow-modals"
             title="Interactive Web 3D Preview"
           />
@@ -454,11 +479,45 @@ function isWeatherJson(text: string): boolean {
 
 function isChartJson(text: string): boolean {
   try {
-    const obj = JSON.parse(text);
-    return Boolean(obj && typeof obj === "object" && obj.chartType && Array.isArray(obj.labels) && Array.isArray(obj.values));
+    const trimmed = text.trim();
+    if (!trimmed.startsWith("{")) return false;
+    const obj = JSON.parse(trimmed);
+    return Boolean(
+      obj &&
+      typeof obj === "object" &&
+      (obj.chartType === "bar" || obj.chartType === "line" || obj.chartType === "pie") &&
+      Array.isArray(obj.labels) &&
+      Array.isArray(obj.values)
+    );
   } catch {
     return false;
   }
+}
+
+function extractChartsFromText(content: string): ChartData[] {
+  const charts: ChartData[] = [];
+  const jsonRegex = /\{[\s\S]*?"chartType"\s*:\s*"(?:bar|line|pie)"[\s\S]*?\}/g;
+  const matches = content.match(jsonRegex);
+
+  if (matches) {
+    for (const match of matches) {
+      try {
+        const obj = JSON.parse(match) as ChartData;
+        if (
+          obj &&
+          typeof obj === "object" &&
+          (obj.chartType === "bar" || obj.chartType === "line" || obj.chartType === "pie") &&
+          Array.isArray(obj.labels) &&
+          Array.isArray(obj.values)
+        ) {
+          charts.push(obj);
+        }
+      } catch {
+        // Ignore parsing errors
+      }
+    }
+  }
+  return charts;
 }
 
 function extractWeatherFromText(content: string): WeatherData | null {
@@ -522,9 +581,6 @@ function tokenizeCodeLine(line: string, lang: string): React.ReactNode[] {
     }
     if (/^\b(?:const|let|var|function|return|if|else|for|while|import|from|export|default|class|interface|type|async|await|try|catch|new|this|def|public|private|static|void|int|float|string|boolean|undefined|null|true|false)\b$/.test(part)) {
       return <span key={idx} className={styles.synKeyword}>{part}</span>;
-    }
-    if (/^<\/?[a-zA-Z0-9-]+$/.test(part)) {
-      return <span key={idx} className={styles.synTag}>{part}</span>;
     }
     if (/^\b\d+\b$/.test(part)) {
       return <span key={idx} className={styles.synNumber}>{part}</span>;

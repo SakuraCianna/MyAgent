@@ -37,6 +37,8 @@ function getSystemPrompt(githubEnabled = false): string {
 
   prompt += `\n10. 【网页与 3D 页面生成规范】：当用户要求制作、生成、创建 HTML 网页、3D 动画、Three.js 界面或前端组件时，在使用 code_executor 执行后，你必须在回答中完整附带包含 <!DOCTYPE html> 及全套 CSS/JS 的 \`\`\`html 代码块，以便前端离线及在线实时内嵌渲染预览！`;
 
+  prompt += `\n11. 【图表绘制渲染规范】：当调用了 chart_generator 工具生成数据图表（柱状图、折线图、饼图）后，在总结分析时，你必须在回答中完整附带工具返回的 \`\`\`chart 代码块（包含 title, chartType, labels, values, unit, description），以便前端高颜值可视图表卡片能够直接绘制展示！`;
+
   return prompt;
 }
 
