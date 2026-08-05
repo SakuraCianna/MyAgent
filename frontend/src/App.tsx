@@ -5,6 +5,7 @@ import type { SessionDto, TraceEntry } from "./api/client";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { ChatWindow, type ChatMessageView } from "./components/ChatWindow";
 import { ToolTraceView } from "./components/ToolTraceView";
+import { PluginsView } from "./components/PluginsView";
 import "./styles/app.css";
 
 export default function App() {
@@ -239,56 +240,67 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [error]);
 
+  const [currentNav, setCurrentNav] = useState<"chat" | "plugins">("chat");
+
   return (
     <div className="app-shell">
       <SessionSidebar
         sessions={sessions}
         activeId={activeId}
+        currentNav={currentNav}
+        onNavChange={setCurrentNav}
         onSelect={setActiveId}
         onCreate={handleNewSession}
         onDelete={handleDeleteSession}
         activeSession={activeSession}
-        onGithubChange={handleGithubChange}
       />
-      <div className="app-main">
-        <header className="app-header">
-          <h1 className="app-title">{activeSession?.title ?? "最小可用 Agent Runtime"}</h1>
-          <div className="app-header-actions">
-            <button
-              className="trace-toggle-btn"
-              onClick={() => setShowTrace((v) => !v)}
-              title="查看 Agent 执行 Trace 轨迹"
-            >
-              {showTrace ? "隐藏 Trace 轨迹" : "查看 Trace 轨迹"}
-            </button>
-          </div>
-        </header>
+      {currentNav === "chat" ? (
+        <div className="app-main">
+          <header className="app-header">
+            <h1 className="app-title">{activeSession?.title ?? "最小可用 Agent Runtime"}</h1>
+            <div className="app-header-actions">
+              <button
+                className="trace-toggle-btn"
+                onClick={() => setShowTrace((v) => !v)}
+                title="查看 Agent 执行 Trace 轨迹"
+              >
+                {showTrace ? "隐藏 Trace 轨迹" : "查看 Trace 轨迹"}
+              </button>
+            </div>
+          </header>
 
-        {error && (
-          <div className="app-error-banner">
-            <span>{error}</span>
-            <button
-              type="button"
-              className="error-close-btn"
-              onClick={() => setError(null)}
-              title="关闭提醒"
-            >
-              ✕
-            </button>
-          </div>
-        )}
+          {error && (
+            <div className="app-error-banner">
+              <span>{error}</span>
+              <button
+                type="button"
+                className="error-close-btn"
+                onClick={() => setError(null)}
+                title="关闭提醒"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
-        <div className="app-body">
-          <ChatWindow
-            messages={messages}
-            loading={sending}
-            session={activeSession}
-            onSend={handleSend}
-            onGithubChange={handleGithubChange}
-          />
-          {showTrace && <ToolTraceView trace={trace} />}
+          <div className="app-body">
+            <ChatWindow
+              messages={messages}
+              loading={sending}
+              session={activeSession}
+              onSend={handleSend}
+              onGithubChange={handleGithubChange}
+            />
+            {showTrace && <ToolTraceView trace={trace} />}
+          </div>
         </div>
-      </div>
+      ) : (
+        <PluginsView
+          activeSession={activeSession}
+          onGithubChange={handleGithubChange}
+          onBackToChat={() => setCurrentNav("chat")}
+        />
+      )}
     </div>
   );
 }

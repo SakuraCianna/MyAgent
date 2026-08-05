@@ -1,74 +1,28 @@
-import { useState } from "react";
 import type { SessionDto } from "../api/client";
 import styles from "./SessionSidebar.module.css";
 
 interface Props {
   sessions: SessionDto[];
   activeId: string | null;
+  currentNav: "chat" | "plugins";
+  onNavChange: (nav: "chat" | "plugins") => void;
   onSelect: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
   activeSession: SessionDto | null;
-  onGithubChange: (opts: { enabled: boolean; token?: string; repo?: string }) => Promise<void>;
 }
 
 export function SessionSidebar({
   sessions,
   activeId,
+  currentNav,
+  onNavChange,
   onSelect,
   onCreate,
   onDelete,
   activeSession,
-  onGithubChange,
 }: Props) {
-  const [showPluginsModal, setShowPluginsModal] = useState(false);
-  const [token, setToken] = useState("");
-  const [repo, setRepo] = useState(activeSession?.githubRepo ?? "");
-  const [saving, setSaving] = useState(false);
-  const [ghError, setGhError] = useState<string | null>(null);
-
   const githubConnected = Boolean(activeSession?.githubConnected);
-
-  async function handleSaveGithubConfig() {
-    setGhError(null);
-    const tokenTrim = token.trim();
-    if (!githubConnected && !tokenTrim) {
-      setGhError("请填写 GitHub Personal Access Token");
-      return;
-    }
-    const repoTrim = repo.trim();
-    if (repoTrim && !/^[\w.-]+\/[\w.-]+$/.test(repoTrim)) {
-      setGhError("仓库格式应为 owner/repo，例如 facebook/react");
-      return;
-    }
-    setSaving(true);
-    try {
-      await onGithubChange({
-        enabled: true,
-        token: tokenTrim || undefined,
-        repo: repoTrim || undefined,
-      });
-      setToken("");
-      setShowPluginsModal(false);
-    } catch (err) {
-      setGhError((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDisconnectGithub() {
-    setSaving(true);
-    setGhError(null);
-    try {
-      await onGithubChange({ enabled: false });
-      setShowPluginsModal(false);
-    } catch (err) {
-      setGhError((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  }
 
   return (
     <aside className={styles.sidebar}>
@@ -78,7 +32,14 @@ export function SessionSidebar({
           <span className={styles.brandName}>MyAgent</span>
         </div>
         <div className={styles.headerIcons}>
-          <button className={styles.iconBtn} title="新建聊天" onClick={onCreate}>
+          <button
+            className={styles.iconBtn}
+            title="新建聊天"
+            onClick={() => {
+              onNavChange("chat");
+              onCreate();
+            }}
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 5v14M5 12h14" strokeLinecap="round" />
             </svg>
@@ -88,7 +49,13 @@ export function SessionSidebar({
 
       {/* 侧边栏功能导航 (新聊天 / 插件) */}
       <div className={styles.navSection}>
-        <button className={styles.navItem} onClick={onCreate}>
+        <button
+          className={`${styles.navItem} ${currentNav === "chat" ? styles.navItemActive : ""}`}
+          onClick={() => {
+            onNavChange("chat");
+            onCreate();
+          }}
+        >
           <svg className={styles.navIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -97,12 +64,8 @@ export function SessionSidebar({
         </button>
 
         <button
-          className={styles.navItem}
-          onClick={() => {
-            setRepo(activeSession?.githubRepo ?? "");
-            setGhError(null);
-            setShowPluginsModal(true);
-          }}
+          className={`${styles.navItem} ${currentNav === "plugins" ? styles.navItemActive : ""}`}
+          onClick={() => onNavChange("plugins")}
         >
           <svg className={styles.navIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
@@ -121,9 +84,12 @@ export function SessionSidebar({
           <div
             key={s.id}
             className={`${styles.sidebarItem} ${
-              s.id === activeId ? styles.sidebarItemActive : ""
+              currentNav === "chat" && s.id === activeId ? styles.sidebarItemActive : ""
             }`}
-            onClick={() => onSelect(s.id)}
+            onClick={() => {
+              onNavChange("chat");
+              onSelect(s.id);
+            }}
           >
             <span className={styles.sidebarItemTitle}>{s.title}</span>
             {s.githubConnected && (
@@ -154,70 +120,6 @@ export function SessionSidebar({
         ))}
         {sessions.length === 0 && <div className={styles.sidebarEmpty}>暂无历史对话</div>}
       </div>
-
-      {/* 外部 API 插件配置 Modal 弹窗 */}
-      {showPluginsModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowPluginsModal(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div className={styles.modalTitleWrap}>
-                <span className={styles.modalBadge}>外部 API 插件</span>
-                <h3>GitHub 扩展服务配置</h3>
-              </div>
-              <button className={styles.closeBtn} onClick={() => setShowPluginsModal(false)}>✕</button>
-            </div>
-
-            <div className={styles.modalBody}>
-              <p className={styles.pluginIntro}>
-                配置外部 GitHub API Token 后，MyAgent 可以为您自动识别、读取和分析您的远程仓库代码、Issues 及 Pull Requests。
-              </p>
-
-              {ghError && <div className={styles.pluginError}>{ghError}</div>}
-
-              <div className={styles.formGroup}>
-                <label>GitHub Personal Access Token {githubConnected && <span className={styles.subText}>(不修改可留空)</span>}</label>
-                <input
-                  type="password"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  placeholder={githubConnected ? "已连接（保留原有 Token）" : "ghp_xxxxxxxxxxxxxxxxxxxx"}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>默认分析仓库 (可选)</label>
-                <input
-                  type="text"
-                  value={repo}
-                  onChange={(e) => setRepo(e.target.value)}
-                  placeholder="如: owner/repo"
-                />
-              </div>
-
-              <div className={styles.modalActions}>
-                {githubConnected && (
-                  <button
-                    type="button"
-                    className={styles.disconnectBtn}
-                    onClick={handleDisconnectGithub}
-                    disabled={saving}
-                  >
-                    断开插件连接
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className={styles.saveBtn}
-                  onClick={handleSaveGithubConfig}
-                  disabled={saving}
-                >
-                  {saving ? "保存中..." : githubConnected ? "更新配置" : "保存并连接插件"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </aside>
   );
 }
