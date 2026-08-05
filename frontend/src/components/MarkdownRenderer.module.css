@@ -99,7 +99,7 @@
   color: #b71c1c;
   padding: 2px 6px;
   border-radius: 4px;
-  font-family: Consolas, "Cascadia Code", "Courier New", Courier, monospace;
+  font-family: Consolas, monospace;
   font-size: 13px;
 }
 
@@ -119,7 +119,7 @@
   background: #2d2d2d;
   font-size: 12px;
   color: #a0a0a0;
-  font-family: Consolas, "Cascadia Code", "Courier New", Courier, monospace;
+  font-family: Consolas, monospace;
 }
 
 .copyBtn {
@@ -159,7 +159,7 @@
   margin: 0;
   padding: 12px;
   overflow-x: auto;
-  font-family: Consolas, "Cascadia Code", "Courier New", Courier, monospace;
+  font-family: Consolas, monospace;
   font-size: 13.5px;
   line-height: 1.5;
 }
