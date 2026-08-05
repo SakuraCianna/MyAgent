@@ -78,8 +78,8 @@
   border-bottom-right-radius: 4px;
   box-shadow: 0 2px 8px rgba(29, 78, 216, 0.15);
 
-  /* 强制覆盖用户气泡内 MarkdownRenderer 所有文本、列表、标题为高清晰纯白 */
-  * {
+  /* 强制覆盖用户气泡内 MarkdownRenderer 所有普通文本、列表、标题为高清晰纯白，但排除代码块语法高亮 */
+  *:not(code):not(pre):not(span[class*="syn"]) {
     color: #ffffff !important;
   }
 

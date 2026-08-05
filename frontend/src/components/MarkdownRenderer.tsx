@@ -322,7 +322,7 @@ function renderInlineText(text: string): React.ReactNode[] {
       const alt = imgMatch[1];
       const url = imgMatch[2];
       return (
-        <div key={idx} className={styles.imageCardContainer}>
+        <span key={idx} className={styles.imageCardContainer} style={{ display: "block" }}>
           <img
             src={url}
             alt={alt}
@@ -337,8 +337,8 @@ function renderInlineText(text: string): React.ReactNode[] {
               }
             }}
           />
-          <div className={styles.imageCardCaption}>🎨 {alt}</div>
-        </div>
+          <span className={styles.imageCardCaption} style={{ display: "block" }}>🎨 {alt}</span>
+        </span>
       );
     }
 
@@ -560,9 +560,9 @@ function highlightSyntax(code: string, language?: string): React.ReactNode[] {
   return lines.map((line, lineIdx) => {
     const tokens = tokenizeCodeLine(line, lang);
     return (
-      <div key={lineIdx}>
+      <span key={lineIdx} style={{ display: "block" }}>
         {tokens}
-      </div>
+      </span>
     );
   });
 }

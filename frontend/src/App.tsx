@@ -55,8 +55,14 @@ export default function App() {
     })();
   }, []);
 
-  // 切换会话时，重新拉取该会话的历史消息与 Trace 历史
+  const activeAbortControllerRef = useRef<AbortController | null>(null);
+
+  // 切换会话或组件卸载时，自动取消正在进行的流式网络请求，防止后端/网络句柄泄露
   useEffect(() => {
+    if (activeAbortControllerRef.current) {
+      activeAbortControllerRef.current.abort();
+      activeAbortControllerRef.current = null;
+    }
     setMessages([]);
     setTrace([]);
     setShowTrace(false);
@@ -139,6 +145,7 @@ export default function App() {
     ]);
 
     const abortCtrl = new AbortController();
+    activeAbortControllerRef.current = abortCtrl;
 
     try {
       await sendMessageStream(
