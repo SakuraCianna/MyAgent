@@ -149,6 +149,7 @@ export function ChatWindow({
   const [atIndex, setAtIndex] = useState(0);
 
   const AT_TOOLS = [
+    { tag: "@ocr_reader", name: "后端神经网络 OCR 识图", icon: "image" },
     { tag: "@web_fetcher", name: "网页深度阅读", icon: "web" },
     { tag: "@image_generator", name: "AI 绘画 / 插图生成", icon: "image" },
     { tag: "@chart_generator", name: "数据可视化图表", icon: "chart" },

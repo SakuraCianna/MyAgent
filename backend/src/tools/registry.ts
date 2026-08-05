@@ -74,4 +74,5 @@ export async function registerAllTools(): Promise<void> {
   await import("./chart_generator.js");
   await import("./web_fetcher.js");
   await import("./image_generator.js");
+  await import("./ocr_reader.js");
 }
